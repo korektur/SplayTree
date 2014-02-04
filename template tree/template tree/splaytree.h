@@ -76,6 +76,7 @@ struct print_value<Const<T, Data>>
 		std::cout << Data << std::endl;
 	}
 };
+
 ///////////////ZIG////////////////
 
 template<class X, class P>
@@ -134,60 +135,49 @@ public:
 		right_case, Node<Left, Right, Const<T, NData>>>::result>::result result;
 };
 
-///////////////SPLIT////////////////
+///////////////SPLAY////////////////
 
+template<class T1, class T2, bool ifRoot = true>
+struct splay
+{
+	typedef Nil result;
+};
+
+template<class Left, class Right, class T, T NData, T Data, bool ifRoot>
+struct splay<Node<Left, Right, Const<T, NData>>, Const<T, Data>, ifRoot>
+{
+private:
+	typedef typename IF < Data == NData, Node<Left, Right, Const<T, NData>>, 
+		typename IF<Data < NData, typename splay<Left, Const<T, Data>, false>::result, typename splay<Right, Const<T, Data>, false>::result>::result>::result rec;
+	typedef typename Zig<rec, Const<T, Data>>::result zig_case;
+	typedef typename Zig_zig<rec, Const<T, Data>>::result zig_zig_case;
+	typedef typename Zig_zag<rec, Const<T, Data>>::result zig_zag_case;
+
+public:
+	typedef typename IF<ifRoot, zig_case, typename IF<Node_data_is_same<zig_zig_case, 
+		Node<Left, Right, Const<T, Data>>>::result, zig_zig_case, zig_zag_case>::result>::result result;
+};
 
 
 
 //////////////FIND//////////////////
 
-template<class Node, class Data>
+template<class Node, class Data, bool ifRoot = true>
 struct find
-{};
-
-template<class Data>
-struct find<Nil, Data>
 {
 	typedef Nil result;
 };
 
-template<class Left, class Right, class T, T NData, T Data>
-struct find<Node<Left, Right, Const<T, NData>>, Const<T, Data>>
+template<class Left, class Right, class T, T NData, T Data, bool ifRoot>
+struct find<Node<Left, Right, Const<T, NData>>, Const<T, Data>, ifRoot>
 {
 private:
-	typedef typename find<Left, Const<T, Data>>::result left_case;
-	typedef typename find<Right, Const<T, Data>>::result right_case;
-	
-public:
-	typedef typename IF<Data == NData, Node<Left, Right, Const<T, NData>>, typename IF<Data <= NData, left_case, right_case>::result>::result result;
-};
-
-template<class Right, class T, T NData, T Data>
-struct find<Node<Nil, Right, Const<T, NData>>, Const<T, Data>>
-{
-private:
-	typedef typename find<Right, Const<T, Data>>::result right_case;
+	typedef typename IF < Data == NData, Node<Left, Right, Const<T, NData>>,
+		typename IF<Data < NData, typename find<Left, Const<T, Data>, false>::result, typename find<Right, Const<T, Data>>::result>::result>::result rec;
 
 public:
-	typedef typename IF<Data == NData, Node<Nil, Right, Const<T, NData>>, typename IF<Data <= NData, Nil, right_case>::result>::result result;
+	typedef typename IF<ifRoot && !(is_Nil<rec>::result), splay<Node<Left, Right, Const<T, NData>>, Const<T, Data>>::result, rec>::result result;
 };
-
-template<class Left, class T, T NData, T Data>
-struct find <Node<Left, Nil, Const<T, NData>>, Const<T, Data>>
-{
-private:
-	typedef typename find<Left, Const<T, Data>>::result left_case;
-	
-public:
-	typedef typename IF<Data == NData, Node<Left, Nil, Const<T, NData>>, typename IF<Data <= NData, left_case, Nil>::result>::result result;
-};
-
-template<class T, T NData, T Data>
-struct find<Node<Nil, Nil, Const<T, NData>>, Const<T, Data>>
-{
-	typedef typename IF<Data == NData, Node<Nil, Nil, Const<T, NData>>, Nil>::result result;
-};
-
 
 //////////////INSERT//////////////////
 
