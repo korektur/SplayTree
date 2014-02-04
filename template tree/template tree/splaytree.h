@@ -77,10 +77,42 @@ struct print_value<Const<T, Data>>
 	}
 };
 
+
+///////////////GETMIN////////////////
+
+template<class T>
+struct get_min
+{
+	typedef Nil result;
+};
+
+template<class Left, class Right, class Data>
+struct get_min<Node<Left, Right, Data>>
+{
+	typedef typename IF<is_Nil<Left>::result, Data, typename get_min<Left>::result>::result result;
+};
+
+///////////////GETMAX////////////////
+
+template<class T>
+struct get_max
+{
+	typedef Nil result;
+};
+
+template<class Left, class Right, class Data>
+struct get_max<Node<Left, Right, Data>>
+{
+	typedef typename IF<is_Nil<Right>::result, Data, typename get_max<Right>::result>::result result;
+};
+
 ///////////////ZIG////////////////
 
 template<class X, class P>
-struct Zig{};
+struct Zig
+{
+	typedef Nil result;
+};
 
 template<class Left, class Right, class T, T NData, T Data>
 struct Zig<Node<Left, Right, Const<T, NData>>, Const<T, Data>>
@@ -98,7 +130,10 @@ public:
 ///////////////ZIG-ZIG////////////////
 
 template<class T1, class T2>
-struct Zig_zig{};
+struct Zig_zig
+{
+	typedef Nil result;
+};
 
 template<class Left, class Right, class T, T NData, T Data>
 struct Zig_zig<Node<Left, Right, Const<T, NData>>, Const<T, Data>>
@@ -118,7 +153,10 @@ public:
 ///////////////ZIG-ZAG////////////////
 
 template<class T1, class T2>
-struct Zig_zag{};
+struct Zig_zag
+{
+	typedef Nil result;
+};
 
 template<class Left, class Right, class T, T NData, T Data>
 struct Zig_zag<Node<Left, Right, Const<T, NData>>, Const<T, Data>>
@@ -176,7 +214,42 @@ private:
 		typename IF<Data < NData, typename find<Left, Const<T, Data>, false>::result, typename find<Right, Const<T, Data>>::result>::result>::result rec;
 
 public:
-	typedef typename IF<ifRoot && !(is_Nil<rec>::result), splay<Node<Left, Right, Const<T, NData>>, Const<T, Data>>::result, rec>::result result;
+	typedef typename IF<ifRoot && !(is_Nil<rec>::result), typename splay<Node<Left, Right, Const<T, NData>>, Const<T, Data>>::result, rec>::result result;
+};
+
+//////////////MERGE///////////////////
+
+template<class Node1, class Node2>
+struct merge
+{
+	typedef Nil result;
+};
+
+template<>
+struct merge<Nil, Nil>
+{
+	typedef Nil result;
+};
+
+template<class Left, class Right, class Data>
+struct merge<Node<Left, Right, Data>, Nil>
+{
+	typedef Node<Left, Right, Data> result;
+};
+
+template<class Left, class Right, class Data>
+struct merge<Nil, Node<Left, Right, Data>>
+{
+	typedef Node<Left, Right, Data> result;
+};
+
+template<class Left1, class Right1, class Left2, class Right2, class T, T NData1, T NData2>
+struct merge<Node<Left1, Right1, Const<T, NData1>>, Node<Left2, Right2, Const<T, NData2>>>
+{
+private:
+	typedef typename get_max<Node<Left1, Right1, Const<T, NData1>>>::result tree1_max;
+	typedef typename splay<Node<Left1, Right1, Const<T, NData1>>, tree1_max>::result new_tree1;
+
 };
 
 //////////////INSERT//////////////////
@@ -200,3 +273,5 @@ private:
 public:
 	typedef typename IF<Data < NData, Node<typename left_case, Right, Const<T, NData>>, Node<Left, typename right_case, Const<T, NData>>>::result result;
 };
+
+
