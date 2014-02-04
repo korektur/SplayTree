@@ -1,4 +1,3 @@
-#include <iostream>
 
 
 struct Nil
@@ -104,6 +103,25 @@ template<class Left, class Right, class Data>
 struct get_max<Node<Left, Right, Data>>
 {
 	typedef typename IF<is_Nil<Right>::result, Data, typename get_max<Right>::result>::result result;
+};
+
+///////////////GETPREV////////////////
+
+template<class Node, class X>
+struct get_prev
+{
+	typedef Nil result;
+};
+
+template<class Left, class Right, class T, T NData, T Data>
+struct get_prev<Node<Left, Right, Const<T, NData>>, Const<T, Data>>
+{
+private:
+	typedef typename get_prev<Left, Const<T, Data>>::result left_case;
+	typedef typename get_prev<Right, Const<T, Data>>::result right_case;
+
+public:
+	typedef typename IF < NData < Data, typename IF<!(is_Nil<right_case>::result), right_case, Const<T, NData>>::result, left_case>::result result;
 };
 
 ///////////////ZIG////////////////
@@ -250,28 +268,75 @@ private:
 	typedef typename get_max<Node<Left1, Right1, Const<T, NData1>>>::result tree1_max;
 	typedef typename splay<Node<Left1, Right1, Const<T, NData1>>, tree1_max>::result new_tree1;
 
+public:
+	typedef Node<typename new_tree1::left, Node<Left2, Right2, Const<T, NData2>>, typename new_tree1::data> result;
 };
 
-//////////////INSERT//////////////////
+//////////////SPLIT//////////////////
 
-template<class Node, class Data>
-struct insert{};
-
-template<class T, T Data>
-struct insert<Nil, Const<T, Data>>
+template<class Node, class X>
+struct split
 {
-	typedef Node<Nil, Nil, Const<T, Data>> result;
+	typedef Nil result1;
+	typedef Nil result2;
 };
 
 template<class Left, class Right, class T, T NData, T Data>
-struct insert<Node<Left, Right, Const<T, NData>>, Const<T, Data>>
+struct split<Node<Left, Right, Const<T, NData>>, Const<T, Data>>
 {
 private:
-	typedef typename insert<Left, Const<T, Data>>::result left_case;
-	typedef typename insert<Right, Const<T, Data>>::result right_case;
-
+	typedef typename get_prev<Node<Left, Right, Const<T, NData>>, Const<T, Data>>::result prev;
+	typedef typename splay<Node<Left, Right, Const<T, NData>>, prev>::result tree1;
 public:
-	typedef typename IF<Data < NData, Node<typename left_case, Right, Const<T, NData>>, Node<Left, typename right_case, Const<T, NData>>>::result result;
+	typedef typename IF<is_Nil<tree1>::result, Nil, Node<typename tree1::left, Nil, typename tree1::data>>::result result1;
+	typedef typename IF<is_Nil<tree1>::result, Nil, typename tree1::right>::result result;
 };
 
+//////////////ADD//////////////////
 
+template<class Node, class X>
+struct add
+{
+	typedef Nil result;
+};
+
+template<class X>
+struct add<Nil, X>
+{
+	typedef Node<Nil, Nil, X> result;
+};
+
+template<class Left, class Right, class T, T NData, T Data>
+struct add<Node<Left, Right, Const<T, NData>>, Const<T, Data>>
+{
+private:
+	typedef split<Node<Left, Right, Const<T, NData>>, Const<T, Data>> splitted_tree;
+
+public:
+	typedef Node<typename splitted_tree::result1, typename splitted_tree::result2, Const<T, Data>> result;
+};
+
+//////////////REMOVE//////////////////
+
+template<class Node, class X>
+struct remove
+{
+	typedef Nil result;
+};
+
+template<class Left, class Right, class Data>
+struct remove<Node<Left, Right, Data>, Nil>
+{
+	typedef Node<Left, Right, Data> result;
+};
+
+template<class Left, class Right, class T, T NData, T Data>
+struct remove<Node<Left, Right, Const<T, NData>>, Const<T, Data>>
+{
+private:
+	typedef split<Node<Left, Right, Const<T, NData>>, Const<T, Data>> splitted_tree;
+
+public:
+	typedef typename IF < Node_data_is_same<typename splitted_tree::result1, Node<Nil, Nil, Const<T, Data>>>::result, 
+		typename merge<typename splitted_tree::result1::left, typename splitted_tree::result2>::result, Node<Left, Right, Const<T, NData>>>::result result;
+};
