@@ -1,4 +1,4 @@
-
+#include<iostream>
 
 struct Nil
 {
@@ -72,10 +72,29 @@ struct print_value<Const<T, Data>>
 {
 	static void print() 
 	{
-		std::cout << Data << std::endl;
+		std::cout << " " << Data << " ";
 	}
 };
 
+template<class T>
+struct print_tree{};
+
+template<>
+struct print_tree<Nil>
+{
+	static void print(){}
+};
+
+template<class Left, class Right, class Data>
+struct print_tree<Node<Left, Right, Data>>
+{
+	static void print()
+	{
+		print_tree<Left>::print();
+		print_value<Data>::print();
+		print_tree<Right>::print();
+	}
+};
 
 ///////////////GETMIN////////////////
 
@@ -121,7 +140,7 @@ private:
 	typedef typename get_prev<Right, Const<T, Data>>::result right_case;
 
 public:
-	typedef typename IF < NData < Data, typename IF<!(is_Nil<right_case>::result), right_case, Const<T, NData>>::result, left_case>::result result;
+	typedef typename IF < NData == Data, Const<T, Data>, typename IF < NData < Data, typename IF<!(is_Nil<right_case>::result), right_case, Const<T, NData>>::result, left_case>::result>::result result;
 };
 
 ///////////////ZIG////////////////
@@ -204,14 +223,16 @@ struct splay<Node<Left, Right, Const<T, NData>>, Const<T, Data>, ifRoot>
 {
 private:
 	typedef typename IF < Data == NData, Node<Left, Right, Const<T, NData>>, 
-		typename IF<Data < NData, typename splay<Left, Const<T, Data>, false>::result, typename splay<Right, Const<T, Data>, false>::result>::result>::result rec;
+		typename IF<Data < NData, Node<typename splay<Left, Const<T, Data>, false>::result, Right, Const<T, NData>>, 
+		Node<Left, typename splay<Right, Const<T, Data>, false>::result, Const<T, NData>>>::result>::result rec;
 	typedef typename Zig<rec, Const<T, Data>>::result zig_case;
-	typedef typename Zig_zig<rec, Const<T, Data>>::result zig_zig_case;
+	typedef typename Zig_zig<rec, Const<T, Data>>::result zig_zig_case; 
 	typedef typename Zig_zag<rec, Const<T, Data>>::result zig_zag_case;
 
 public:
-	typedef typename IF<ifRoot, zig_case, typename IF<Node_data_is_same<zig_zig_case, 
-		Node<Left, Right, Const<T, Data>>>::result, zig_zig_case, zig_zag_case>::result>::result result;
+	typedef typename IF<ifRoot && Node_data_is_same<zig_case, Node<Left, Right, Const<T, Data>>>::result, zig_case, 
+		typename IF<Node_data_is_same<zig_zig_case, Node<Left, Right, Const<T, Data>>>::result, zig_zig_case, zig_zag_case>::result>::result result;
+
 };
 
 
@@ -289,7 +310,8 @@ private:
 	typedef typename splay<Node<Left, Right, Const<T, NData>>, prev>::result tree1;
 public:
 	typedef typename IF<is_Nil<tree1>::result, Nil, Node<typename tree1::left, Nil, typename tree1::data>>::result result1;
-	typedef typename IF<is_Nil<tree1>::result, Nil, typename tree1::right>::result result;
+	typedef typename IF<is_Nil<tree1>::result, Nil, typename tree1::right>::result result2;
+
 };
 
 //////////////ADD//////////////////
@@ -319,19 +341,19 @@ public:
 //////////////REMOVE//////////////////
 
 template<class Node, class X>
-struct remove
+struct Remove
 {
 	typedef Nil result;
 };
 
 template<class Left, class Right, class Data>
-struct remove<Node<Left, Right, Data>, Nil>
+struct Remove<Node<Left, Right, Data>, Nil>
 {
 	typedef Node<Left, Right, Data> result;
 };
 
 template<class Left, class Right, class T, T NData, T Data>
-struct remove<Node<Left, Right, Const<T, NData>>, Const<T, Data>>
+struct Remove<Node<Left, Right, Const<T, NData>>, Const<T, Data>>
 {
 private:
 	typedef split<Node<Left, Right, Const<T, NData>>, Const<T, Data>> splitted_tree;
